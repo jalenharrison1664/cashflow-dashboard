@@ -7,10 +7,27 @@
   font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: #0f172a;
   background: #f1f5f9;
+  --chart-grid: #e2e8f0;
+  --chart-axis: #64748b;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #cbd5e1;
+  --chart-tooltip-text: #0f172a;
+  --chart-legend: #334155;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark {
+  color: #e2e8f0;
+  background: #020617;
+  --chart-grid: #1e293b;
+  --chart-axis: #94a3b8;
+  --chart-tooltip-bg: #0f172a;
+  --chart-tooltip-border: #334155;
+  --chart-tooltip-text: #e2e8f0;
+  --chart-legend: #cbd5e1;
 }
 
 * {
@@ -26,4 +43,9 @@ body,
 body {
   margin: 0;
   background: radial-gradient(circle at top right, #e2e8f0 0%, #f8fafc 45%, #f1f5f9 100%);
+  transition: background-color 250ms ease, color 250ms ease;
+}
+
+html.dark body {
+  background: radial-gradient(circle at top right, #0f172a 0%, #020617 45%, #020617 100%);
 }

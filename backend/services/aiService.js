@@ -3,6 +3,32 @@ const { createError } = require('../middleware/errorHandler');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Try user-configured model first, then reliable project-available fallbacks.
+const CANDIDATE_MODELS = [
+  process.env.GEMINI_MODEL,
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-flash-lite-latest',
+].filter(Boolean);
+
+const uniqueModels = [...new Set(CANDIDATE_MODELS)];
+
+// Model responses are expected to be JSON, but this parser tolerates accidental markdown wrappers.
+const parseModelJson = (text) => {
+  const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
+      throw new SyntaxError('No JSON object found in AI response');
+    }
+    return JSON.parse(cleaned.slice(firstBrace, lastBrace + 1));
+  }
+};
+
 /**
  * Send structured financial insights to Gemini and return
  * natural language analysis with risks and recommendations.
@@ -51,22 +77,47 @@ Respond with EXACTLY this JSON structure (no markdown, no code blocks, raw JSON 
   "healthScore": <integer 0-100 representing overall financial health>
 }`;
 
-  try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
+  let lastError;
 
-    // Strip any accidental markdown code fences
-    const cleaned = text.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-
-    const parsed = JSON.parse(cleaned);
-    return parsed;
-  } catch (err) {
-    if (err instanceof SyntaxError) {
-      throw createError('AI returned an unexpected response format. Please try again.', 502);
+  // Iterate through candidate models so the endpoint still works when one model is unavailable.
+  for (const modelName of uniqueModels) {
+    console.log(`[AI] Trying model: ${modelName}`);
+    try {
+      const model = genAI.getGenerativeModel({ model: modelName });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim();
+      const parsed = parseModelJson(text);
+      console.log(`[AI] ✅ Success with model: ${modelName}`);
+      return parsed;
+    } catch (err) {
+      console.warn(`[AI] ⚠️  Model "${modelName}" failed: ${err.message}`);
+      lastError = err;
+      // 429 means quota is exhausted — all remaining models will fail too, so bail early.
+      if (err.message?.includes('429') || err.message?.toLowerCase().includes('quota')) {
+        console.warn('[AI] Quota exhausted — skipping remaining model candidates.');
+        break;
+      }
     }
-    throw createError(`Gemini API error: ${err.message}`, 502);
   }
+
+  if (lastError instanceof SyntaxError) {
+    throw createError('AI returned an unexpected response format. Please try again.', 502);
+  }
+
+  const isQuota =
+    lastError?.message?.includes('429') || lastError?.message?.toLowerCase().includes('quota');
+
+  if (isQuota) {
+    throw createError(
+      'Gemini free-tier quota exhausted. Showing rule-based insights instead. Quota resets daily — no key rotation needed.',
+      429
+    );
+  }
+
+  throw createError(
+    `Gemini API error: ${lastError?.message || 'Failed to generate insights. Check GEMINI_API_KEY and GEMINI_MODEL.'}`,
+    502
+  );
 };
 
 module.exports = { generateAIInsights };

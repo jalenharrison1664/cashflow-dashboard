@@ -1,90 +1,120 @@
-# Cash Flow Intelligence Dashboard
+# LedgerFlow — Financial Intelligence Dashboard
 
-Full-stack SaaS dashboard for tracking, analyzing, and forecasting business cash flow using React, Node.js, PostgreSQL (Supabase-compatible), and Google Gemini.
+## Overview
 
-## Backend (Step 1)
+LedgerFlow is a full-stack analytics platform that transforms raw transaction CSVs into actionable financial intelligence. The system automates ingestion, KPI computation, trend analysis, forecasting, and AI-generated recommendations so teams can make faster financial decisions with less manual analysis. It is engineered to provide immediate operational visibility into revenue, expense behavior, runway risk, and near-term cash outlook.
 
-Backend folder structure follows clean architecture style:
+## Features
 
-- `backend/routes`
-- `backend/controllers`
-- `backend/services`
-- `backend/utils`
+- **Global search** — real-time, debounced search across transactions, KPIs, and AI insights directly from the navbar.
+- Automates CSV ingestion and normalization into a PostgreSQL-backed transaction pipeline.
+- Delivers real-time executive KPIs, including revenue, expenses, net cash flow, and runway.
+- Visualizes historical financial behavior and projected trends with interactive charts.
+- Generates structured insights and AI-assisted recommendations for risk detection and planning (Gemini AI with rule-based fallback).
+- Supports resilient AI UX with fallback insights when external model calls fail.
+- Includes dark mode toggle with `localStorage` persistence.
+- Includes guided onboarding UI (help modal, notifications, upload workflow) for faster adoption.
 
-### 1) Configure environment
+## Tech Stack
 
-1. Copy `backend/.env.example` to `backend/.env`
-2. Fill these values:
-   - `DATABASE_URL`
-   - `GEMINI_API_KEY`
-   - optional: `PORT`, `FRONTEND_URL`
+### Frontend
 
-### 2) Create database schema
+- React (Vite)
+- Tailwind CSS
+- Recharts
+- Axios
+- Lucide React
 
-Run `backend/config/schema.sql` in Supabase SQL editor (or your PostgreSQL instance).
+### Backend
 
-### 3) Install and run backend
+- Node.js
+- Express
+- PostgreSQL (`pg`) / Supabase-compatible
+- Multer + `csv-parse`
+- Google Generative AI SDK (Gemini)
+
+### Dev Tools
+
+- Nodemon
+- ESLint
+- PostCSS
+
+## Architecture
+
+- The React client calls backend REST endpoints through an API utility layer.
+- Express routes delegate to controllers, which orchestrate service-layer business logic.
+- Services query PostgreSQL for aggregation, trend analysis, and forecasting.
+- AI insights route combines structured analytics with Gemini output, then returns standardized JSON to the dashboard.
+- The upload pipeline validates CSV schema (`date`, `income`, `expenses`) and persists cleaned rows for downstream analytics.
+
+## Demo / Screenshots
+
+- Dashboard view: _Add screenshot here_
+- Upload workflow: _Add screenshot here_
+- AI insights panel: _Add screenshot here_
+
+## How to Run
+
+### 1) Clone and install
+
+```bash
+git clone https://github.com/jalenharrison1664/cashflow-dashboard.git
+cd cashflow-dashboard
+```
 
 ```bash
 cd backend
 npm install
+cd ../frontend
+npm install
+```
+
+### 2) Configure environment files
+
+Create `backend/.env` from `backend/.env.example` and set:
+
+- `DATABASE_URL`
+- `GEMINI_API_KEY`
+- `GEMINI_MODEL` (recommended: a model available to your key)
+- optional: `PORT`, `FRONTEND_URL`
+
+Create `frontend/.env` from `frontend/.env.example` (optional for local dev when using Vite proxy).
+
+### 3) Initialize database schema
+
+Run `backend/config/schema.sql` in your PostgreSQL/Supabase SQL editor.
+
+### 4) Start backend
+
+```bash
+cd backend
 npm run dev
 ```
 
-Server starts at `http://localhost:5000` by default.
+Default backend URL: `http://localhost:5000`
 
-### 4) API endpoints
-
-Exact spec-compatible endpoints:
-
-- `POST /upload`
-- `GET /transactions`
-- `GET /summary`
-- `GET /insights`
-- `GET /ai-insights`
-- `GET /forecast`
-
-Also available with `/api` prefix:
-
-- `POST /api/upload`
-- `GET /api/transactions`
-- `GET /api/summary`
-- `GET /api/insights`
-- `GET /api/ai-insights`
-- `GET /api/forecast`
-
-### 5) CSV upload format
-
-CSV must include these columns:
-
-- `date`
-- `income`
-- `expenses`
-
-Use `sample_data.csv` to test quickly.
-
-## Frontend (Step 2)
-
-### 1) Configure frontend env
-
-1. Copy `frontend/.env.example` to `frontend/.env`
-2. Set `VITE_API_URL` (default: `http://localhost:5000/api`)
-
-### 2) Install and run frontend
+### 5) Start frontend
 
 ```bash
 cd frontend
-npm install
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173` by default.
+Default frontend URL: `http://localhost:5173` (or next available Vite port).
 
-## Current Feature Coverage
+### 6) Load sample data
 
-- Stripe-style SaaS layout (left sidebar, top navbar, card-based content)
-- KPI cards: revenue, expenses, net cash flow, runway
-- Cash flow chart (revenue green, expenses red, net blue)
-- AI insights panel (Gemini-backed, non-hardcoded)
-- Forecast chart with dashed predicted line
-- CSV upload page wired to backend
+- Open the Upload page.
+- Upload `sample_data.csv`.
+- Return to the dashboard to view KPIs, charts, and insights.
+
+## Future Improvements
+
+- Add role-based authentication and multi-tenant data isolation.
+- Implement scheduled ETL ingestion from accounting APIs (Stripe, QuickBooks, Plaid).
+- Add model observability (latency, token usage, failure reasons) and insight quality scoring.
+- Introduce alerting workflows for runway thresholds and abnormal spend spikes.
+
+## Author
+
+Jalen Harrison

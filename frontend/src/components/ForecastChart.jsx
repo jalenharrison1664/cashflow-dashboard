@@ -25,21 +25,30 @@ function ForecastChart({ historical = [], forecast = [] }) {
   }));
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors duration-300 dark:border-slate-700 dark:bg-slate-900">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-slate-900">Cash Flow Forecast</h2>
-        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">Predicted 7–30 days</span>
+        <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">LedgerFlow Forecast</h2>
+        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Predicted 7–30 days</span>
       </div>
 
       <div className="h-72 w-full">
         <ResponsiveContainer>
           <LineChart data={merged} margin={{ top: 8, right: 15, left: 0, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748b' }} minTickGap={24} />
-            <YAxis tick={{ fontSize: 11, fill: '#64748b' }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
-            <Tooltip formatter={(value) => formatUSD(value)} />
-            <Legend />
-            <ReferenceLine y={0} stroke="#94a3b8" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+            <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--chart-axis)' }} minTickGap={24} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--chart-axis)' }} tickFormatter={(v) => `$${Math.round(v / 1000)}k`} />
+            <Tooltip
+              formatter={(value) => formatUSD(value)}
+              contentStyle={{
+                backgroundColor: 'var(--chart-tooltip-bg)',
+                borderColor: 'var(--chart-tooltip-border)',
+                color: 'var(--chart-tooltip-text)',
+              }}
+              labelStyle={{ color: 'var(--chart-tooltip-text)' }}
+              itemStyle={{ color: 'var(--chart-tooltip-text)' }}
+            />
+            <Legend wrapperStyle={{ color: 'var(--chart-legend)' }} />
+            <ReferenceLine y={0} stroke="var(--chart-axis)" />
             <Line type="monotone" dataKey="netHistorical" name="Historical Net" stroke="#1d4ed8" strokeWidth={2.5} dot={false} />
             <Line
               type="monotone"

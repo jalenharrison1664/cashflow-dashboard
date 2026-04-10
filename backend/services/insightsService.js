@@ -1,3 +1,7 @@
+/**
+ * Structured insights service.
+ * Produces deterministic financial signals that can be rendered directly or passed to Gemini.
+ */
 const pool = require('../config/db');
 
 /**
@@ -59,10 +63,10 @@ const computeStructuredInsights = async () => {
     ORDER BY date ASC
   `);
 
-  const w = weeklyResult.rows[0];
-  const m = monthlyResult.rows[0];
+  const weeklyMetrics = weeklyResult.rows[0];
+  const monthlyMetrics = monthlyResult.rows[0];
   const avgDaily = parseFloat(avgResult.rows[0].avg_daily_expense) || 0;
-  const totalNet = parseFloat(m.total_net);
+  const totalNet = parseFloat(monthlyMetrics.total_net);
   const runway = avgDaily > 0 ? Math.max(0, Math.floor(totalNet / avgDaily)) : null;
 
   const pct = (curr, prev) => {
@@ -74,14 +78,14 @@ const computeStructuredInsights = async () => {
 
   return {
     weekly: {
-      revenueChange: pct(w.curr_week_revenue, w.prev_week_revenue),
-      expensesChange: pct(w.curr_week_expenses, w.prev_week_expenses),
-      currRevenue: parseFloat(w.curr_week_revenue),
-      currExpenses: parseFloat(w.curr_week_expenses),
+      revenueChange: pct(weeklyMetrics.curr_week_revenue, weeklyMetrics.prev_week_revenue),
+      expensesChange: pct(weeklyMetrics.curr_week_expenses, weeklyMetrics.prev_week_expenses),
+      currRevenue: parseFloat(weeklyMetrics.curr_week_revenue),
+      currExpenses: parseFloat(weeklyMetrics.curr_week_expenses),
     },
     monthly: {
-      revenue: parseFloat(m.curr_month_revenue),
-      expenses: parseFloat(m.curr_month_expenses),
+      revenue: parseFloat(monthlyMetrics.curr_month_revenue),
+      expenses: parseFloat(monthlyMetrics.curr_month_expenses),
       net: totalNet,
     },
     cashRunway: runway,

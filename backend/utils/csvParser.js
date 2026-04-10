@@ -13,29 +13,50 @@ const REQUIRED_COLUMNS = ['date', 'income', 'expenses'];
 const parseCSV = (filePath) => {
   return new Promise((resolve, reject) => {
     const results = [];
+    let skipped = 0;
+    let settled = false;
+
+    const parser = parse({
+      columns: true,          // first row as headers
+      skip_empty_lines: true,
+      trim: true,
+    });
+
+    const safeReject = (err) => {
+      if (settled) return;
+      settled = true;
+      parser.destroy();
+      reject(err);
+    };
 
     fs.createReadStream(filePath)
-      .pipe(
-        parse({
-          columns: true,          // first row as headers
-          skip_empty_lines: true,
-          trim: true,
-        })
-      )
+      .pipe(parser)
       .on('headers', (headers) => {
         const lower = headers.map((h) => h.toLowerCase());
         const missing = REQUIRED_COLUMNS.filter((col) => !lower.includes(col));
         if (missing.length > 0) {
-          reject(createError(`CSV missing required columns: ${missing.join(', ')}`, 400));
+          safeReject(createError(`CSV missing required columns: ${missing.join(', ')}. Got: ${headers.join(', ')}`, 400));
         }
       })
       .on('data', (row) => {
         const normalized = normalizeKeys(row);
         const parsed = validateRow(normalized);
-        if (parsed) results.push(parsed);
+        if (parsed) {
+          results.push(parsed);
+        } else {
+          skipped++;
+        }
       })
-      .on('error', (err) => reject(createError(`CSV parse error: ${err.message}`, 400)))
-      .on('end', () => resolve(results));
+      .on('error', (err) => safeReject(createError(`CSV parse error: ${err.message}`, 400)))
+      .on('end', () => {
+        if (settled) return;
+        settled = true;
+        if (skipped > 0) {
+          console.warn(`[CSV] Skipped ${skipped} invalid row(s) (bad date or non-numeric values).`);
+        }
+        console.log(`[CSV] Parsed ${results.length} valid row(s).`);
+        resolve(results);
+      });
   });
 };
 

@@ -8,11 +8,18 @@ const uploadCSV = async (req, res, next) => {
     if (!req.file) throw createError('No file uploaded', 400);
 
     const filePath = req.file.path;
+    console.log(`[Upload] Received: ${req.file.originalname} (${req.file.size} bytes)`);
+
     const rows = await parseCSV(filePath);
 
-    if (rows.length === 0) throw createError('CSV file is empty or has no valid rows', 400);
+    if (rows.length === 0) {
+      fs.unlink(filePath, () => {});
+      throw createError('CSV has no valid rows. Ensure date is YYYY-MM-DD and income/expenses are numbers.', 400);
+    }
 
+    console.log(`[Upload] Inserting ${rows.length} rows into database...`);
     const inserted = await insertTransactions(rows);
+    console.log(`[Upload] ✅ ${inserted} transaction(s) saved.`);
 
     // Clean up uploaded file after processing
     fs.unlink(filePath, () => {});
@@ -23,6 +30,7 @@ const uploadCSV = async (req, res, next) => {
       count: inserted,
     });
   } catch (err) {
+    console.error('[Upload] ❌ Error:', err.message);
     next(err);
   }
 };

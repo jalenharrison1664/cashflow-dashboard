@@ -1,3 +1,7 @@
+/**
+ * Forecast service.
+ * Builds a short-term projection from historical daily cash flow using adaptive methods.
+ */
 const pool = require('../config/db');
 
 /**
@@ -22,6 +26,7 @@ const computeForecast = async (days = 30) => {
   const historicalIncome = rows.map((r) => parseFloat(r.income));
   const historicalExpenses = rows.map((r) => parseFloat(r.expenses));
 
+  // Use regression when enough history exists; otherwise keep projection conservative with moving average.
   const method = rows.length >= 14 ? 'linear_regression' : 'moving_average';
 
   let forecastNet, forecastIncome, forecastExpenses;
@@ -38,6 +43,7 @@ const computeForecast = async (days = 30) => {
 
   const lastDate = new Date(rows[rows.length - 1].date);
 
+  // Recompose predicted series into the same shape used by frontend charts/API consumers.
   const forecast = forecastNet.map((netVal, i) => {
     const forecastDate = new Date(lastDate);
     forecastDate.setDate(forecastDate.getDate() + i + 1);

@@ -1,3 +1,7 @@
+/**
+ * API server entrypoint.
+ * Wires middleware, route modules, and global error handling for dashboard data + AI endpoints.
+ */
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -11,6 +15,7 @@ const aiInsightsRoutes = require('./routes/aiInsights');
 const forecastRoutes = require('./routes/forecast');
 
 const { errorHandler } = require('./middleware/errorHandler');
+const pool = require('./config/db');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -66,6 +71,14 @@ app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+
+  // Probe DB immediately on startup for early, clear feedback.
+  pool.query('SELECT 1').then(() => {
+    console.log('✅ Database connection verified');
+  }).catch((err) => {
+    console.error('❌ Database connection failed:', err.message);
+    console.error('   → Check DATABASE_URL in backend/.env and ensure the database is accessible.');
+  });
 });
 
 module.exports = app;
